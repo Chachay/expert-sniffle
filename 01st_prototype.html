@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gantt Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7.0.0/dist/d3.min.js"></script>
+</head>
+<body>
+  <h1>Gantt Chart</h1>
+  <div class="container">
+    <div class="column">
+      <!-- Content for the first column -->
+      <table>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Task 1</td>
+            <td>2022-01-01</td>
+            <td>2022-01-05</td>
+          </tr>
+          <tr>
+            <td>Task 2</td>
+            <td>2022-01-06</td>
+            <td>2022-01-10</td>
+          </tr>
+          <tr>
+            <td>Task 3</td>
+            <td>2022-01-11</td>
+            <td>2022-01-15</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="column">
+      <!-- Content for the second column -->
+      <!-- Canvas for SVG Gantt Chart-->
+      <div id="svgContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    // Dummy JSON data for Gantt chart
+    var ganttData = [
+      {
+        label: 'Task 1',
+        start: '2022-01-01',
+        end: '2022-01-05'
+      },
+      {
+        label: 'Task 2',
+        start: '2022-01-06',
+        end: '2022-01-10'
+      },
+      {
+        label: 'Task 3',
+        start: '2022-01-11',
+        end: '2022-01-15'
+      }
+    ];
+
+    // Draw Gantt Chart with d3.js to svgContainer
+    // Select the svgContainer element
+    var svgContainer = d3.select("#svgContainer");
+
+    // Set the dimensions and margins of the chart
+    var margin = { top: 20, right: 30, bottom: 30, left: 60 };
+    var width = svgContainer.node().getBoundingClientRect().width - margin.left - margin.right;
+    var height = 400 - margin.top - margin.bottom;
+
+    // Create the SVG element
+    var svg = svgContainer.append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // Parse the dates
+    var parseDate = d3.timeParse("%Y-%m-%d");
+
+    // Format the dates
+    var formatDate = d3.timeFormat("%b %d");
+
+    // Set the x and y scales
+    var x = d3.scaleTime().range([0, width]);
+    var y = d3.scaleBand().range([height, 0]).padding(0.1);
+
+    // Set the domains of the scales
+    x.domain(d3.extent(ganttData, function(d) { return parseDate(d.start); }));
+    y.domain(ganttData.map(function(d) { return d.label; }));
+
+    // Draw the x axis
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x).tickFormat(formatDate));
+
+    // Draw the y axis
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+    // Draw the bars
+    svg.selectAll(".bar")
+      .data(ganttData)
+      .enter().append("rect")
+      .attr("class", "bar")
+      .attr("x", function(d) { return x(parseDate(d.start)); })
+      .attr("y", function(d) { return y(d.label); })
+      .attr("width", function(d) { return x(parseDate(d.end)) - x(parseDate(d.start)); })
+      .attr("height", y.bandwidth())
+      .attr("fill", "rgba(75, 192, 192, 0.2)")
+      .attr("stroke", "rgba(75, 192, 192, 1)")
+      .attr("stroke-width", 1);
+  </script>
+</body>
+</html>

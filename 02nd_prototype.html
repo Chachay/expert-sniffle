@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <title>Two-Column Page</title>
+  <style>
+    html, body {
+      height: 100%;
+    }
+    .container-fluid {
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid" style="height: 100%;">
+    <div class="row h-100">
+      <div class="col-md-2">
+        <h1>Column 1</h1>
+        <p>This is the content for column 1.</p>
+      </div>
+      <div class="col-md-10" style="background: #77e190;">
+        <canvas id="myCanvas" style="width: 100%; height: 100%;"></canvas>
+        <script>
+          const canvas = document.getElementById('myCanvas');
+          const ctx = canvas.getContext('2d');
+          //set canvas height and width to fill the parent container
+          canvas.width = canvas.offsetWidth;
+          canvas.height = canvas.offsetHeight;
+          // Resize canvas for resize event
+          window.addEventListener('resize', function() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            redrawCanvas();
+          });
+
+          // Set the canvas width and height related constants
+          const blockWidth = canvas.width / 3;
+          const blockHeight = canvas.height / 3;
+          let blockOffsetX = 0.0;
+          let blockOffsetY = 0.0;
+
+          const drawBlock = (row, col, x, y, width, height) => {
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, width, height);
+            ctx.fillText(`(${row}, ${col})`, x + width / 2 - 3, y + height / 2);
+          };
+
+          // Return the block row and column based on x and y coordinates
+          const getBlockRowCol = (x, y) => {
+            const row = Math.floor(y / blockHeight);
+            const col = Math.floor(x / blockWidth);
+            return { row, col };
+          };
+
+          // Draw the nine blocks
+          const drawBlocks = (blockOffsetX, blockOffsetY) => {
+            const CanvasOffsetX = - blockOffsetX + Math.floor(blockOffsetX / blockWidth) * blockWidth;
+            const CanvasOffsetY = - blockOffsetY + Math.floor(blockOffsetY / blockHeight) * blockHeight;
+            for (let CanvasRow = -1; CanvasRow < 4; CanvasRow++) {
+              for (let CanvasCol = -1; CanvasCol < 4; CanvasCol ++) {
+                const x = CanvasCol * blockWidth  + blockOffsetX;
+                const y = CanvasRow * blockHeight + blockOffsetY;
+                const {row, col} = getBlockRowCol(x, y);
+                const CanvasX = CanvasCol * blockWidth + CanvasOffsetX;
+                const CanvasY = CanvasRow * blockHeight + CanvasOffsetY;
+                drawBlock(row, col, CanvasX, CanvasY, blockWidth, blockHeight);
+              }
+            }
+          };
+          drawBlocks(blockOffsetX, blockOffsetY);
+
+          // Enable panning
+          var isDragging = false;
+          var lastX = 0;
+          var lastY = 0;
+
+          canvas.addEventListener('mousedown', function(event) {
+            isDragging = true;
+            lastX = event.clientX;
+            lastY = event.clientY;
+          });
+
+          canvas.addEventListener('mousemove', function(event) {
+            if (isDragging) {
+              const deltaX = event.clientX - lastX;
+              const deltaY = event.clientY - lastY;
+              lastX = event.clientX;
+              lastY = event.clientY;
+              blockOffsetX -= deltaX;
+              blockOffsetY -= deltaY;
+              redrawCanvas();
+              console.info(`blockOffsetX: ${blockOffsetX}, blockOffsetY: ${blockOffsetY}`);
+            }
+          });
+
+          canvas.addEventListener('mouseup', function() {
+            isDragging = false;
+          });
+
+          function redrawCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Redraw the nine blocks
+            drawBlocks(blockOffsetX, blockOffsetY);
+          }
+        </script>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>
