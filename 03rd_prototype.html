@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <title>Two-Column Page</title>
+  <style>
+    html, body {
+      height: 100%;
+    }
+    .container-fluid {
+      height: 100vh;
+    }
+    .block {
+      border: 1px solid rgb(201, 198, 198);
+      text-align: center;
+    }
+    .monthBlock {
+      border: 1px solid black;
+      text-align: center;
+      vertical-align: middle;
+      padding-top: 0.6em;
+    }
+    .dayBlock{
+      border: 1px solid black;
+      padding-top: 0.2em;
+      padding-left: 2 px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid" style="height: 100%;">
+    <div class="row h-100">
+      <div class="col-md-2" style="z-index: 100;background-color: bisque;">
+        <h1>Gantt</h1>
+        <p>Gantt chart like google map</p>
+      </div>
+      <div class="col-md-10 overflow-hidden">
+        <div class="row">
+          <div class="col-md-12" style="z-index: 90;">
+            <div id="TimeLine" style="width: 100%; height: 80px;"></div>
+          </div>
+        </div>
+        <div class="row h-100">
+          <div class="col-md-12" style="z-index: 0; overflow: hidden;">
+            <div id="myCanvas" style="width: 100%; height: 100%;"></div>
+          </div>
+        </div>
+        <script>
+          const canvas = document.getElementById('myCanvas');
+          const blockWidth = 300;
+          const blockHeight = 40;
+          let blockOffsetX = 0.0;
+          let blockOffsetY = 0.0;
+
+          const timeline = document.getElementById('TimeLine');
+          // define 2024 april 1st
+          const firstMonth = new Date(2024, 4, 1);
+          // get three month later of firstmonth
+          const thirdMonth = new Date(firstMonth.getFullYear(), firstMonth.getMonth() + 3, firstMonth.getDate());
+
+          const drawMonthBlock = (x, y, month, resolution) => {
+            const block = document.createElement('div');
+            block.className = 'monthBlock';
+            block.classList.add('align-middle');
+            block.style.width = blockWidth + 'px';
+            block.style.height = '80px';
+            block.style.position = 'absolute'; // Add absolute positioning
+            block.style.left = x + 'px';
+            block.style.top = y + 'px';
+            // get month name of month
+            const monthName = month.toLocaleString('en-EN', { month: 'long', year: 'numeric' });
+            block.innerText = `${monthName}`;
+            timeline.appendChild(block);
+
+            // get the date of the first Monday of the month
+            const monday = new Date(month.getFullYear(), month.getMonth(), (8 - month.getDay()) % 7 + 1);
+            const days = [];
+            while (monday.getMonth() === month.getMonth()) {
+              days.push(monday.getDate());
+              monday.setDate(monday.getDate() + 7);
+            }
+            console.info(days);
+
+            // draw the days
+            const dayWidth = blockWidth / days.length;
+            const dayHeight = 40;
+            for (let i = 0; i < days.length; i++) {
+              const day = document.createElement('div');
+              day.className = 'dayBlock';
+              day.style.width = dayWidth + 'px';
+              day.style.height = dayHeight + 'px';
+              day.style.position = 'absolute'; // Add absolute positioning
+              day.style.left = x + i * dayWidth + 'px';
+              day.style.top = y + 40 + 'px';
+              day.innerText = `${days[i]}`;
+              timeline.appendChild(day);
+            }
+          }
+          const drawTimeline = (startMonth, months, resolution, blockOffsetX) => {
+            const CanvasOffsetX = - blockOffsetX + Math.floor(blockOffsetX / blockWidth) * blockWidth;
+            for (let i = -1; i < months; i++) {
+                const x = i * blockWidth  + blockOffsetX;
+                const y = 0;
+                const {row, col} = getBlockRowCol(x, y);
+                const CanvasX = i * blockWidth + CanvasOffsetX;
+                const CanvasY = 0;
+                drawMonthBlock(CanvasX, CanvasY, new Date(firstMonth.getFullYear(), firstMonth.getMonth()+col, 1), resolution);
+            }
+          }
+          // draw timeline from the first month to the third month
+          drawTimeline(firstMonth, 6, 1, blockOffsetX);
+
+          const drawBlock = (row, col, x, y) => {
+            const block = document.createElement('div');
+            block.className = 'block';
+            block.style.width = blockWidth + 'px';
+            block.style.height = blockHeight + 'px';
+            block.style.position = 'absolute'; // Add absolute positioning
+            block.style.left = x + 'px';
+            block.style.top = y + 'px';
+            // block.innerText = `(${row}, ${col})`;
+            canvas.appendChild(block);
+          };
+
+          const drawBlocks = (blockOffsetX, blockOffsetY) => {
+            const CanvasOffsetX = - blockOffsetX + Math.floor(blockOffsetX / blockWidth) * blockWidth;
+            const CanvasOffsetY = - blockOffsetY + Math.floor(blockOffsetY / blockHeight) * blockHeight;
+            for (let CanvasRow = -1; CanvasRow < 30; CanvasRow++) {
+              for (let CanvasCol = -1; CanvasCol < 6; CanvasCol ++) {
+                const x = CanvasCol * blockWidth  + blockOffsetX;
+                const y = CanvasRow * blockHeight + blockOffsetY;
+                const {row, col} = getBlockRowCol(x, y);
+                const CanvasX = CanvasCol * blockWidth + CanvasOffsetX;
+                const CanvasY = CanvasRow * blockHeight + CanvasOffsetY;
+                drawBlock(row, col, CanvasX, CanvasY);
+              }
+            }
+          };
+          drawBlocks(blockOffsetX, blockOffsetY);
+
+          // Enable panning
+          var isDragging = false;
+          var lastX = 0;
+          var lastY = 0;
+
+          canvas.addEventListener('mousedown', function(event) {
+            isDragging = true;
+            lastX = event.clientX;
+            lastY = event.clientY;
+          });
+
+          canvas.addEventListener('mousemove', function(event) {
+            if (isDragging) {
+              const deltaX = event.clientX - lastX;
+              const deltaY = event.clientY - lastY;
+              lastX = event.clientX;
+              lastY = event.clientY;
+              blockOffsetX -= deltaX;
+              blockOffsetY -= deltaY;
+              redrawCanvas();
+            }
+          });
+
+          canvas.addEventListener('mouseup', function() {
+            isDragging = false;
+          });
+
+          function redrawCanvas() {
+            canvas.innerHTML = '';
+            // Redraw the nine blocks
+            drawBlocks(blockOffsetX, blockOffsetY);
+
+            timeline.innerHTML = '';
+            drawTimeline(firstMonth, 6, 1, blockOffsetX);
+          }
+
+          function getBlockRowCol(x, y) {
+            const row = Math.floor(y / blockHeight);
+            const col = Math.floor(x / blockWidth);
+            return { row, col };
+          }
+        </script>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>
